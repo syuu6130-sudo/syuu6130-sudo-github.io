@@ -1,539 +1,251 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>反射神経ゲーム</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .container {
-            background: white;
-            border-radius: 30px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
-            max-width: 700px;
-            width: 100%;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            color: #666;
-            font-size: 1rem;
-        }
-        
-        .settings-btn {
-            background: #e5e7eb;
-            color: #374151;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            margin-top: 15px;
-            transition: all 0.3s;
-        }
-        
-        .settings-btn:hover {
-            background: #d1d5db;
-        }
-        
-        .settings-panel {
-            background: #f9fafb;
-            border: 2px solid #e5e7eb;
-            border-radius: 20px;
-            padding: 25px;
-            margin: 20px 0;
-            display: none;
-        }
-        
-        .settings-panel.active {
-            display: block;
-        }
-        
-        .slider-container {
-            margin-top: 15px;
-        }
-        
-        .slider {
-            width: 100%;
-            height: 6px;
-            border-radius: 5px;
-            outline: none;
-            margin: 10px 0;
-        }
-        
-        .slider-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            color: #666;
-        }
-        
-        .slider-value {
-            color: #8b5cf6;
-            font-weight: bold;
-        }
-        
-        .mode-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .mode-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 30px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .mode-btn:hover {
-            transform: scale(1.05);
-        }
-        
-        .mode-btn.blue {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-        }
-        
-        .mode-btn.purple {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-        }
-        
-        .mode-btn.pink {
-            background: linear-gradient(135deg, #ec4899, #db2777);
-        }
-        
-        .mode-title {
-            font-size: 1.8rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .mode-subtitle {
-            font-size: 0.85rem;
-            opacity: 0.9;
-            margin-bottom: 10px;
-        }
-        
-        .high-score {
-            border-top: 1px solid rgba(255,255,255,0.3);
-            padding-top: 10px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-        }
-        
-        .game-stats {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        
-        .stat-box {
-            padding: 15px 25px;
-            border-radius: 25px;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        
-        .score-box {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-        
-        .time-box {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        
-        .game-area {
-            position: relative;
-            background: linear-gradient(135deg, #eff6ff, #f5f3ff);
-            border: 4px solid #a78bfa;
-            border-radius: 20px;
-            height: 400px;
-            overflow: hidden;
-            cursor: none;
-        }
-        
-        .crosshair {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            pointer-events: none;
-            z-index: 10;
-            transform: translate(-50%, -50%);
-        }
-        
-        .crosshair::before,
-        .crosshair::after {
-            content: '';
-            position: absolute;
-            background: #ef4444;
-        }
-        
-        .crosshair::before {
-            width: 12px;
-            height: 2px;
-            left: 4px;
-            top: 9px;
-        }
-        
-        .crosshair::after {
-            width: 2px;
-            height: 12px;
-            left: 9px;
-            top: 4px;
-        }
-        
-        .crosshair-dot {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: #ef4444;
-            border-radius: 50%;
-            left: 8px;
-            top: 8px;
-        }
-        
-        .target {
-            position: absolute;
-            background: linear-gradient(135deg, #ef4444, #ec4899);
-            border: 4px solid white;
-            border-radius: 50%;
-            cursor: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 2rem;
-            transition: transform 0.1s;
-        }
-        
-        .target:hover {
-            transform: scale(1.1);
-        }
-        
-        .combo-text {
-            text-align: center;
-            margin-top: 15px;
-            color: #8b5cf6;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-        
-        .result-screen {
-            text-align: center;
-        }
-        
-        .result-box {
-            background: linear-gradient(to right, #fef3c7, #fed7aa);
-            border-radius: 20px;
-            padding: 40px;
-            margin-bottom: 25px;
-        }
-        
-        .trophy-icon {
-            font-size: 4rem;
-            margin-bottom: 15px;
-        }
-        
-        .result-title {
-            font-size: 2rem;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        
-        .result-mode {
-            color: #666;
-            margin-bottom: 15px;
-        }
-        
-        .result-score {
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: #8b5cf6;
-            margin-bottom: 5px;
-        }
-        
-        .result-label {
-            color: #666;
-            font-size: 1.1rem;
-        }
-        
-        .new-record {
-            color: #ec4899;
-            font-weight: bold;
-            font-size: 1.3rem;
-            margin-top: 15px;
-        }
-        
-        .restart-btn {
-            background: linear-gradient(to right, #8b5cf6, #ec4899);
-            color: white;
-            border: none;
-            padding: 18px 50px;
-            border-radius: 30px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s;
-        }
-        
-        .restart-btn:hover {
-            transform: scale(1.05);
-        }
-        
-        .hidden {
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🎯 反射神経ゲーム</h1>
-            <p class="subtitle">制限時間内にできるだけ多くのターゲットをクリック!</p>
+import React, { useState, useEffect, useRef } from 'react';
+import { Target, Trophy, RefreshCw, Clock, Settings } from 'lucide-react';
+
+export default function ReactionGame() {
+  const [gameState, setGameState] = useState('start');
+  const [score, setScore] = useState(0);
+  const [targetPosition, setTargetPosition] = useState({ x: 50, y: 50 });
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [selectedMode, setSelectedMode] = useState(30);
+  const [highScores, setHighScores] = useState({ 30: 0, 60: 0, 300: 0 });
+  const [consecutiveHits, setConsecutiveHits] = useState(0);
+  const [targetSize, setTargetSize] = useState(64);
+  const [mouseX, setMouseX] = useState(0);
+  const [mouseY, setMouseY] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const [sensitivity, setSensitivity] = useState(1);
+  const gameAreaRef = useRef(null);
+
+  useEffect(() => {
+    if (gameState === 'playing' && timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (timeLeft === 0 && gameState === 'playing') {
+      endGame();
+    }
+  }, [timeLeft, gameState]);
+
+  const startGame = (mode) => {
+    setSelectedMode(mode);
+    setGameState('playing');
+    setScore(0);
+    setTimeLeft(mode);
+    setConsecutiveHits(0);
+    setTargetSize(64);
+    moveTarget();
+  };
+
+  const moveTarget = () => {
+    const x = Math.random() * 80 + 10;
+    const y = Math.random() * 70 + 10;
+    setTargetPosition({ x, y });
+  };
+
+  const handleTargetClick = () => {
+    if (gameState === 'playing') {
+      setScore(score + 1);
+      const newHits = consecutiveHits + 1;
+      setConsecutiveHits(newHits);
+      const newSize = Math.max(32, 64 - newHits * 2);
+      setTargetSize(newSize);
+      moveTarget();
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (gameAreaRef.current) {
+      const rect = gameAreaRef.current.getBoundingClientRect();
+      setMouseX(e.clientX - rect.left);
+      setMouseY(e.clientY - rect.top);
+    }
+  };
+
+  const endGame = () => {
+    setGameState('end');
+    if (score > highScores[selectedMode]) {
+      setHighScores({ ...highScores, [selectedMode]: score });
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return mins > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${secs}秒`;
+  };
+
+  const getModeLabel = (seconds) => {
+    if (seconds === 30) return '30秒';
+    if (seconds === 60) return '1分';
+    if (seconds === 300) return '5分';
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full">
+        <div className="text-center mb-6">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
+            <Target className="text-pink-500" size={40} />
+            反射神経ゲーム
+          </h1>
+          <p className="text-gray-600">制限時間内にできるだけ多くのターゲットをクリック!</p>
         </div>
-        
-        <div id="startScreen">
-            <div style="text-align: center;">
-                <h2 style="font-size: 1.5rem; color: #333; margin-bottom: 15px;">⏱️ モードを選択</h2>
-                <button class="settings-btn" onclick="toggleSettings()">⚙️ 設定</button>
+
+        {gameState === 'start' && (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-2">
+                <Clock className="text-purple-500" size={28} />
+                モードを選択
+              </h2>
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="inline-flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-300 transition-colors"
+              >
+                <Settings size={18} />
+                設定
+              </button>
             </div>
-            
-            <div id="settingsPanel" class="settings-panel">
-                <h3 style="color: #333; margin-bottom: 10px;">マウス感度</h3>
-                <div class="slider-container">
-                    <input type="range" min="0.5" max="2" step="0.1" value="1" class="slider" id="sensitivitySlider">
-                    <div class="slider-labels">
-                        <span>低 (0.5x)</span>
-                        <span class="slider-value" id="sensitivityValue">1.0x</span>
-                        <span>高 (2.0x)</span>
-                    </div>
+
+            {showSettings && (
+              <div className="bg-gray-50 p-6 rounded-2xl border-2 border-gray-200">
+                <h3 className="font-bold text-gray-800 mb-4">マウス感度</h3>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2"
+                  step="0.1"
+                  value={sensitivity}
+                  onChange={(e) => setSensitivity(parseFloat(e.target.value))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-sm text-gray-600 mt-2">
+                  <span>低 (0.5x)</span>
+                  <span className="font-bold text-purple-600">{sensitivity.toFixed(1)}x</span>
+                  <span>高 (2.0x)</span>
                 </div>
-            </div>
+              </div>
+            )}
             
-            <div class="mode-grid">
-                <button class="mode-btn blue" onclick="startGame(30)">
-                    <div class="mode-title">30秒</div>
-                    <div class="mode-subtitle">クイックモード</div>
-                    <div class="high-score">🏆 <span id="highScore30">0</span></div>
-                </button>
-                
-                <button class="mode-btn purple" onclick="startGame(60)">
-                    <div class="mode-title">1分</div>
-                    <div class="mode-subtitle">ノーマルモード</div>
-                    <div class="high-score">🏆 <span id="highScore60">0</span></div>
-                </button>
-                
-                <button class="mode-btn pink" onclick="startGame(300)">
-                    <div class="mode-title">5分</div>
-                    <div class="mode-subtitle">エンデュランスモード</div>
-                    <div class="high-score">🏆 <span id="highScore300">0</span></div>
-                </button>
-            </div>
-        </div>
-        
-        <div id="gameScreen" class="hidden">
-            <div class="game-stats">
-                <div class="stat-box score-box">スコア: <span id="score">0</span></div>
-                <div class="stat-box time-box">残り: <span id="timeLeft">30秒</span></div>
-            </div>
-            
-            <div class="game-area" id="gameArea">
-                <div class="crosshair" id="crosshair">
-                    <div class="crosshair-dot"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                onClick={() => startGame(30)}
+                className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-2xl hover:from-blue-600 hover:to-blue-700 transform hover:scale-105 transition-all shadow-lg"
+              >
+                <div className="text-3xl font-bold mb-2">30秒</div>
+                <div className="text-sm opacity-90">クイックモード</div>
+                <div className="mt-3 pt-3 border-t border-blue-400">
+                  <Trophy className="inline mr-2" size={16} />
+                  <span className="font-bold">{highScores[30]}</span>
                 </div>
-                <div class="target" id="target">🎯</div>
+              </button>
+
+              <button
+                onClick={() => startGame(60)}
+                className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-2xl hover:from-purple-600 hover:to-purple-700 transform hover:scale-105 transition-all shadow-lg"
+              >
+                <div className="text-3xl font-bold mb-2">1分</div>
+                <div className="text-sm opacity-90">ノーマルモード</div>
+                <div className="mt-3 pt-3 border-t border-purple-400">
+                  <Trophy className="inline mr-2" size={16} />
+                  <span className="font-bold">{highScores[60]}</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => startGame(300)}
+                className="bg-gradient-to-br from-pink-500 to-pink-600 text-white p-6 rounded-2xl hover:from-pink-600 hover:to-pink-700 transform hover:scale-105 transition-all shadow-lg"
+              >
+                <div className="text-3xl font-bold mb-2">5分</div>
+                <div className="text-sm opacity-90">エンデュランスモード</div>
+                <div className="mt-3 pt-3 border-t border-pink-400">
+                  <Trophy className="inline mr-2" size={16} />
+                  <span className="font-bold">{highScores[300]}</span>
+                </div>
+              </button>
             </div>
-            
-            <div class="combo-text" id="comboText"></div>
-        </div>
-        
-        <div id="resultScreen" class="hidden result-screen">
-            <div class="result-box">
-                <div class="trophy-icon">🏆</div>
-                <h2 class="result-title">ゲーム終了!</h2>
-                <p class="result-mode" id="resultMode">30秒モード</p>
-                <p class="result-score" id="resultScore">0</p>
-                <p class="result-label">ヒット</p>
-                <p class="new-record hidden" id="newRecord">🎉 新記録達成! 🎉</p>
+          </div>
+        )}
+
+        {gameState === 'playing' && (
+          <div>
+            <div className="flex justify-between mb-4 text-xl font-bold">
+              <div className="bg-blue-100 px-6 py-3 rounded-full text-blue-700">
+                スコア: {score}
+              </div>
+              <div className="bg-red-100 px-6 py-3 rounded-full text-red-700">
+                残り: {formatTime(timeLeft)}
+              </div>
             </div>
-            <button class="restart-btn" onclick="backToMenu()">🔄 モード選択に戻る</button>
-        </div>
+            <div 
+              ref={gameAreaRef}
+              className="relative bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl h-96 border-4 border-purple-300"
+              onMouseMove={handleMouseMove}
+              style={{ cursor: 'none' }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  left: mouseX,
+                  top: mouseY,
+                  width: '20px',
+                  height: '20px',
+                  transform: 'translate(-10px, -10px)',
+                  pointerEvents: 'none',
+                  zIndex: 100
+                }}
+              >
+                <div style={{ position: 'relative', width: '20px', height: '20px' }}>
+                  <div style={{ position: 'absolute', width: '12px', height: '2px', background: '#ef4444', left: '4px', top: '9px' }}></div>
+                  <div style={{ position: 'absolute', width: '2px', height: '12px', background: '#ef4444', left: '9px', top: '4px' }}></div>
+                  <div style={{ position: 'absolute', width: '4px', height: '4px', background: '#ef4444', borderRadius: '50%', left: '8px', top: '8px' }}></div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleTargetClick}
+                className="absolute bg-gradient-to-br from-red-500 to-pink-500 rounded-full shadow-lg transform hover:scale-110 transition-transform border-4 border-white flex items-center justify-center"
+                style={{
+                  left: `${targetPosition.x}%`,
+                  top: `${targetPosition.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: `${targetSize}px`,
+                  height: `${targetSize}px`,
+                  cursor: 'none'
+                }}
+              >
+                <Target className="text-white" size={targetSize / 2} />
+              </button>
+            </div>
+            {consecutiveHits > 0 && (
+              <div className="text-center mt-3 text-sm font-bold text-purple-600">
+                連続ヒット: {consecutiveHits} 🔥 難易度UP!
+              </div>
+            )}
+          </div>
+        )}
+
+        {gameState === 'end' && (
+          <div className="text-center space-y-6">
+            <div className="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-2xl p-8">
+              <Trophy className="mx-auto text-yellow-500 mb-4" size={64} />
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">ゲーム終了!</h2>
+              <p className="text-gray-500 mb-3">{getModeLabel(selectedMode)}モード</p>
+              <p className="text-5xl font-bold text-purple-600 mb-2">{score}</p>
+              <p className="text-gray-600">ヒット</p>
+              {score === highScores[selectedMode] && score > 0 && (
+                <p className="text-pink-500 font-bold mt-4 text-xl">🎉 新記録達成! 🎉</p>
+              )}
+            </div>
+            <button
+              onClick={() => setGameState('start')}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-12 py-4 rounded-full text-xl font-bold hover:from-purple-600 hover:to-pink-600 transform hover:scale-105 transition-all shadow-lg flex items-center gap-2 mx-auto"
+            >
+              <RefreshCw size={24} />
+              モード選択に戻る
+            </button>
+          </div>
+        )}
+      </div>
     </div>
-
-    <script>
-        let gameState = 'start';
-        let score = 0;
-        let timeLeft = 30;
-        let selectedMode = 30;
-        let highScores = { 30: 0, 60: 0, 300: 0 };
-        let consecutiveHits = 0;
-        let targetSize = 64;
-        let sensitivity = 1;
-        let timerInterval;
-
-        const startScreen = document.getElementById('startScreen');
-        const gameScreen = document.getElementById('gameScreen');
-        const resultScreen = document.getElementById('resultScreen');
-        const gameArea = document.getElementById('gameArea');
-        const target = document.getElementById('target');
-        const crosshair = document.getElementById('crosshair');
-        const sensitivitySlider = document.getElementById('sensitivitySlider');
-        const sensitivityValue = document.getElementById('sensitivityValue');
-
-        sensitivitySlider.addEventListener('input', (e) => {
-            sensitivity = parseFloat(e.target.value);
-            sensitivityValue.textContent = sensitivity.toFixed(1) + 'x';
-        });
-
-        function toggleSettings() {
-            const panel = document.getElementById('settingsPanel');
-            panel.classList.toggle('active');
-        }
-
-        function startGame(mode) {
-            selectedMode = mode;
-            gameState = 'playing';
-            score = 0;
-            timeLeft = mode;
-            consecutiveHits = 0;
-            targetSize = 64;
-            
-            startScreen.classList.add('hidden');
-            gameScreen.classList.remove('hidden');
-            resultScreen.classList.add('hidden');
-            
-            updateDisplay();
-            moveTarget();
-            startTimer();
-        }
-
-        function startTimer() {
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                updateDisplay();
-                
-                if (timeLeft <= 0) {
-                    endGame();
-                }
-            }, 1000);
-        }
-
-        function moveTarget() {
-            const maxX = gameArea.clientWidth - targetSize;
-            const maxY = gameArea.clientHeight - targetSize;
-            
-            const x = Math.random() * (maxX - 40) + 20;
-            const y = Math.random() * (maxY - 40) + 20;
-            
-            target.style.left = x + 'px';
-            target.style.top = y + 'px';
-            target.style.width = targetSize + 'px';
-            target.style.height = targetSize + 'px';
-            target.style.fontSize = (targetSize / 2) + 'px';
-        }
-
-        target.addEventListener('click', () => {
-            if (gameState === 'playing') {
-                score++;
-                consecutiveHits++;
-                
-                targetSize = Math.max(32, 64 - consecutiveHits * 2);
-                
-                updateDisplay();
-                moveTarget();
-            }
-        });
-
-        gameArea.addEventListener('mousemove', (e) => {
-            if (gameState === 'playing') {
-                const rect = gameArea.getBoundingClientRect();
-                const x = (e.clientX - rect.left) * sensitivity;
-                const y = (e.clientY - rect.top) * sensitivity;
-                
-                crosshair.style.left = x + 'px';
-                crosshair.style.top = y + 'px';
-            }
-        });
-
-        function updateDisplay() {
-            document.getElementById('score').textContent = score;
-            
-            const mins = Math.floor(timeLeft / 60);
-            const secs = timeLeft % 60;
-            const timeText = mins > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${secs}秒`;
-            document.getElementById('timeLeft').textContent = timeText;
-            
-            const comboText = document.getElementById('comboText');
-            if (consecutiveHits > 0) {
-                comboText.textContent = `連続ヒット: ${consecutiveHits} 🔥 難易度UP!`;
-            } else {
-                comboText.textContent = '';
-            }
-        }
-
-        function endGame() {
-            clearInterval(timerInterval);
-            gameState = 'end';
-            
-            if (score > highScores[selectedMode]) {
-                highScores[selectedMode] = score;
-                document.getElementById(`highScore${selectedMode}`).textContent = score;
-                document.getElementById('newRecord').classList.remove('hidden');
-            } else {
-                document.getElementById('newRecord').classList.add('hidden');
-            }
-            
-            const modeLabels = { 30: '30秒', 60: '1分', 300: '5分' };
-            document.getElementById('resultMode').textContent = modeLabels[selectedMode] + 'モード';
-            document.getElementById('resultScore').textContent = score;
-            
-            gameScreen.classList.add('hidden');
-            resultScreen.classList.remove('hidden');
-        }
-
-        function backToMenu() {
-            gameState = 'start';
-            startScreen.classList.remove('hidden');
-            gameScreen.classList.add('hidden');
-            resultScreen.classList.add('hidden');
-        }
-    </script>
-</body>
-</html>
+  );
+}
