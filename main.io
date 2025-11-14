@@ -1,181 +1,233 @@
-import json
-import random
-import time
-import os
-from datetime import datetime
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Number Guessing Game</title>
+<style>
+    body {
+        font-family: "Segoe UI", sans-serif;
+        background: #111;
+        color: #fff;
+        text-align: center;
+        padding: 20px;
+    }
+    #container {
+        width: 90%;
+        max-width: 550px;
+        margin: auto;
+        background: #222;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 0 20px rgba(255,255,255,0.15);
+    }
+    input[type=number] {
+        width: 120px;
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        font-size: 20px;
+        margin: 10px;
+        text-align: center;
+    }
+    button {
+        padding: 10px 20px;
+        background: #09f;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        margin: 10px;
+        font-size: 18px;
+    }
+    button:hover {
+        opacity: 0.8;
+    }
+    .hidden { display: none; }
+    table {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+    }
+    th, td {
+        border-bottom: 1px solid #555;
+        padding: 10px;
+    }
+</style>
+</head>
+<body>
+<div id="container">
+    <h1>🎮 Number Guessing Game</h1>
 
-# ============================================================
-#  Mini Game Project (Number Guessing & Score Ranking)
-#  ~200 lines sample project
-# ============================================================
+    <!-- 名前入力画面 -->
+    <div id="nameScreen">
+        <p>名前を入力してください</p>
+        <input id="playerName" type="text" placeholder="Your name">
+        <button onclick="startMenu()">Start</button>
+    </div>
 
-DATA_FILE = "scores.json"
+    <!-- メインメニュー -->
+    <div id="menuScreen" class="hidden">
+        <h2>メニュー</h2>
+        <button onclick="startGame()">ゲーム開始</button>
+        <button onclick="showRanking()">ランキング</button>
+        <button onclick="resetData()">データ削除</button>
+    </div>
 
-# -------------------------------
-# Utility functions
-# -------------------------------
-def load_scores():
-    """Load scores from JSON file."""
-    if not os.path.exists(DATA_FILE):
-        return []
+    <!-- ゲーム画面 -->
+    <div id="gameScreen" class="hidden">
+        <h2>数字を当ててください（1〜100）</h2>
+        <p id="message"></p>
+        <input id="guessInput" type="number" min="1" max="100">
+        <button onclick="submitGuess()">決定</button>
+        <button onclick="backToMenu()">戻る</button>
+    </div>
 
-    try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return []
+    <!-- ランキング画面 -->
+    <div id="rankingScreen" class="hidden">
+        <h2>🏆 ランキング</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>名前</th>
+                    <th>試行</th>
+                    <th>時間</th>
+                    <th>日付</th>
+                </tr>
+            </thead>
+            <tbody id="rankingBody"></tbody>
+        </table>
+        <button onclick="backToMenu()">戻る</button>
+    </div>
+</div>
 
+<script>
+// ==========================
+// 保存データ処理 (localStorage)
+// ==========================
+function loadScores() {
+    return JSON.parse(localStorage.getItem("scores") || "[]");
+}
 
-def save_scores(scores):
-    """Save score list to JSON file."""
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(scores, f, indent=4, ensure_ascii=False)
+function saveScores(scores) {
+    localStorage.setItem("scores", JSON.stringify(scores));
+}
 
+// ==========================
+// 画面切り替え
+// ==========================
+function showScreen(id) {
+    document.querySelectorAll("#container > div").forEach(div => div.classList.add("hidden"));
+    document.getElementById(id).classList.remove("hidden");
+}
 
-def clear_screen():
-    """Clear console screen."""
-    os.system("cls" if os.name == "nt" else "clear")
+// プレイヤー名
+let playerName = "";
+let target = 0;
+let attempts = 0;
+let startTime;
 
+// ==========================
+// メニュー開始
+// ==========================
+function startMenu() {
+    playerName = document.getElementById("playerName").value || "Player";
+    showScreen("menuScreen");
+}
 
-# -------------------------------
-# Game logic
-# -------------------------------
-def play_game(player_name):
-    clear_screen()
-    print("=========================================")
-    print("        🔢 Number Guessing Game")
-    print("=========================================")
+// ==========================
+// ゲーム開始
+// ==========================
+function startGame() {
+    target = Math.floor(Math.random() * 100) + 1;
+    attempts = 0;
+    startTime = Date.now();
+    document.getElementById("message").textContent = "";
+    document.getElementById("guessInput").value = "";
+    showScreen("gameScreen");
+}
 
-    target = random.randint(1, 100)
-    attempts = 0
-    start_time = time.time()
+// ==========================
+// 予想入力
+// ==========================
+function submitGuess() {
+    let guess = Number(document.getElementById("guessInput").value);
 
-    while True:
-        try:
-            guess = int(input("1〜100の間で予想してね："))
-        except:
-            print("数字を入力してね。")
-            continue
-
-        attempts += 1
-
-        if guess < target:
-            print("もっと大きいよ！")
-        elif guess > target:
-            print("もっと小さいよ！")
-        else:
-            break
-
-    end_time = time.time()
-    duration = round(end_time - start_time, 2)
-
-    score = {
-        "name": player_name,
-        "attempts": attempts,
-        "time": duration,
-        "date": datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    if (!guess || guess < 1 || guess > 100) {
+        alert("1〜100 の数字を入力してください");
+        return;
     }
 
-    print("\n🎉 おめでとう！ 正解は", target)
-    print(f"⏱️ 時間: {duration}s")
-    print(f"🧮 試行回数: {attempts} 回")
+    attempts++;
 
-    # Save score
-    scores = load_scores()
-    scores.append(score)
-    save_scores(scores)
+    if (guess < target) {
+        document.getElementById("message").textContent = "もっと大きい！";
+    } else if (guess > target) {
+        document.getElementById("message").textContent = "もっと小さい！";
+    } else {
+        finishGame();
+    }
+}
 
-    input("\nEnterキーでメニューへ戻る...")
-    clear_screen()
+// ==========================
+// ゲームクリア
+// ==========================
+function finishGame() {
+    let duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
+    alert(`🎉 正解！\n試行: ${attempts}回\n時間: ${duration}s`);
 
-# -------------------------------
-# Ranking system
-# -------------------------------
-def show_ranking():
-    clear_screen()
-    print("=========================================")
-    print("               🏆 Ranking")
-    print("=========================================\n")
+    let scores = loadScores();
+    scores.push({
+        name: playerName,
+        attempts: attempts,
+        time: duration,
+        date: new Date().toLocaleString()
+    });
+    saveScores(scores);
 
-    scores = load_scores()
-    if not scores:
-        print("ランキングデータがありません。")
-        input("\nEnterで戻る…")
-        return
+    showScreen("menuScreen");
+}
 
-    # Sort by attempts, then time
-    sorted_scores = sorted(scores, key=lambda x: (x["attempts"], x["time"]))
+// ==========================
+// ランキング表示
+// ==========================
+function showRanking() {
+    let scores = loadScores();
+    scores.sort((a, b) => a.attempts - b.attempts || a.time - b.time);
 
-    for i, s in enumerate(sorted_scores[:20], start=1):
-        print(f"{i:2d}位 | {s['name']:<12} | {s['attempts']:>2} 回 | {s['time']:>5}s | {s['date']}")
+    let tbody = document.getElementById("rankingBody");
+    tbody.innerHTML = "";
 
-    input("\nEnterで戻る…")
+    scores.forEach(s => {
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${s.name}</td>
+            <td>${s.attempts}</td>
+            <td>${s.time}</td>
+            <td>${s.date}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 
+    showScreen("rankingScreen");
+}
 
-# -------------------------------
-# Delete all scores
-# -------------------------------
-def reset_scores():
-    clear_screen()
-    print("⚠️ 本当にリセットしますか？")
-    print("1: はい\n2: いいえ")
-    ans = input(">> ")
+// ==========================
+// データ削除
+// ==========================
+function resetData() {
+    if (confirm("本当に削除しますか？")) {
+        localStorage.removeItem("scores");
+        alert("データを削除しました");
+    }
+}
 
-    if ans == "1":
-        save_scores([])
-        print("データを削除しました。")
-    else:
-        print("キャンセルしました。")
-
-    input("\nEnterでメニューへ戻る...")
-
-
-# -------------------------------
-# Main menu
-# -------------------------------
-def main_menu():
-    clear_screen()
-    print("=========================================")
-    print("      🎮 Simple Python Game System")
-    print("=========================================\n")
-    print("1: ゲーム開始")
-    print("2: ランキング表示")
-    print("3: データリセット")
-    print("4: 終了\n")
-
-    return input("番号を入力: ")
-
-
-# -------------------------------
-# Main program
-# -------------------------------
-def main():
-    clear_screen()
-    print("=========================================")
-    print("     🎉 Mini Game Project (200 lines)")
-    print("=========================================\n")
-
-    name = input("あなたの名前を入力してください: ").strip()
-    if not name:
-        name = "Player"
-
-    while True:
-        select = main_menu()
-
-        if select == "1":
-            play_game(name)
-        elif select == "2":
-            show_ranking()
-        elif select == "3":
-            reset_scores()
-        elif select == "4":
-            print("また遊んでね！")
-            break
-        else:
-            print("1〜4を入力してね。")
-            time.sleep(1)
-
-
-if __name__ == "__main__":
-    main()
+// ==========================
+// 戻る
+// ==========================
+function backToMenu() {
+    showScreen("menuScreen");
+}
+</script>
+</body>
+</html>
