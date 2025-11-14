@@ -88,8 +88,8 @@ How to use:
 
     // globe
     const Globe = new ThreeGlobe({ animateIn: true })
-      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
-      .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+      .globeImageUrl('https://unpkg.com/three-globe/example/img/https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+      .bumpImageUrl('https://unpkg.com/three-globe/example/img/https://unpkg.com/three-globe/example/img/earth-topology.png')
       .backgroundImageUrl(null);
 
     // atmosphere glow (subtle)
